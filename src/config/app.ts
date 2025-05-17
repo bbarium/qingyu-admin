@@ -13,7 +13,7 @@ export const tokenKey = storagePrefixKey + 'token'
 
 export const userInfoKey = storagePrefixKey + 'userInfo'
 
-export const appName = '轻羽场馆管理平台'
+export const appName = '羽毛球场地预约系统'
 
 export const pageSizesArr = [30, 60, 100]
 

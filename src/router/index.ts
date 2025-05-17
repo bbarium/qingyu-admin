@@ -122,6 +122,24 @@ const menuRoute: RouteRecordRaw[] = [
       },
     ],
   },
+  {
+    path: '',
+    component: () => import('@/views/layout/MainLayout.vue'),
+    redirect: '/',
+    meta: { icon: 'House', title: '首页', alwaysShow: true },
+    children: [
+      {
+        path: '',
+        component: () => import('@/views/home/index.vue'),
+        meta: { icon: 'House', title: '首页', hideMenu: true },
+      },
+      {
+        path: 'campus-select',
+        component: () => import('@/views/home/CampusSelect.vue'),
+        meta: { title: '校区选择', icon: 'School' }
+      }
+    ],
+  },
 ]
 
 const whiteList: string[] = ['/login'] //不需要登录也能查看的路由,最少需要'/login'，要不然会一直重定向到login

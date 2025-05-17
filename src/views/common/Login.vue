@@ -7,7 +7,7 @@
         <el-input
           size="large"
           v-model="form.name"
-          placeholder="用户名"
+          placeholder="NetID"
           type="text"
           maxlength="50"
         >
@@ -141,13 +141,13 @@ const userlogin = () => {
   display: flex;
   justify-content: center;
   // background: #9e9e9e;
-  background: url(@/assets/bg.jpg) no-repeat;
+  background: url(@/assets/R.jpg) no-repeat;
   background-size: cover;
   align-items: center;
 
   .login-box {
     width: 500px;
-    background: white;
+    background: rgba(255, 255, 255, 0.85);
     border-radius: 8px;
     height: 440px;
     overflow: hidden;
