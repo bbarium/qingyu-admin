@@ -33,7 +33,7 @@ const { asideCollapse } = storeToRefs(appStore)
       <el-header>
         <HeaderBar />
       </el-header>
-      <TabsChrome />
+
       <el-main>
         <router-view></router-view>
       </el-main>
