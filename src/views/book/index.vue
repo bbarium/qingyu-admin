@@ -12,7 +12,6 @@
           {{ item.name }}
         </el-tag>
         <el-check-tag>可预定</el-check-tag>
-        <el-check-tag checked>已选择</el-check-tag>
       </div>
 
       <div class="left-main">
@@ -21,12 +20,18 @@
           :size="isMinScreen ? 'small' : 'large'"
         >
           <el-radio-button
-            v-for="item in nextSevenDays"
+            v-for="item in nextThreeDays"
             :label="item.short"
             :value="item.long"
+            class="date-radio-button"
           ></el-radio-button>
         </el-radio-group>
-        <el-table class="my_table" :data="tableData" style="width: 100%">
+        <el-table
+          class="my_table"
+          :data="tableData"
+          style="width: 100%"
+          :row-class-name="getRowClassName"
+        >
           <el-table-column fixed prop="timeValue" label="时间" width="110">
           </el-table-column>
           <el-table-column
@@ -44,38 +49,19 @@
                   class="el-check-box"
                   :checked="scope.row[column].checked"
                   @change="onTagChange(scope.row[column])"
-                  >{{ formatPrice(scope.row[column].price) }}</el-check-tag
+                  :class="{ 'selected-tag': scope.row[column].checked }"
                 >
-
+                  {{ formatPrice(scope.row[column].price) }}
+                </el-check-tag>
                 <el-tag
                   v-else
                   class="el-check-box"
-                  :type="getTagType(scope.row[column])"
+                  type="info"
                   effect="dark"
                   size="large"
                 >
-                  {{ scope.row[column] }}
+                  不可预定
                 </el-tag>
-
-                <!-- <el-popover
-                  v-else
-                  placement="top-start"
-                  title="预定信息"
-                  :width="100"
-                  trigger="hover"
-                  content="暂无"
-                >
-                  <template #reference>
-                    <el-tag
-                      :type="getTagType(scope.row[column])"
-                      effect="dark"
-                      size="large"
-                      style="width: 90px; height: 48px"
-                    >
-                      {{ scope.row[column] }}
-                    </el-tag>
-                  </template>
-                </el-popover> -->
               </div>
             </template>
           </el-table-column>
@@ -84,31 +70,13 @@
     </el-col>
     <el-col :xs="24" :sm="6">
       <div class="book_info">
-        <h3>预约信息</h3>
-        <el-form
-          ref="ruleFormRef"
-          :model="form"
-          :rules="rules"
-          label-position="right"
-          label-width="50px"
-        >
-          <el-form-item label="姓名" prop="name">
-            <el-input v-model="form.name" />
-          </el-form-item>
-          <el-form-item label="手机" prop="phone">
-            <el-input v-model="form.phone" />
-          </el-form-item>
-          <el-form-item label="备注" prop="remark">
-            <el-input v-model="form.remark" />
-          </el-form-item>
-        </el-form>
         <h3>场次信息</h3>
         <div class="book_site_list">
           <div class="book-site-box" v-for="item in showSeletSite">
             <div>{{ item.site }}</div>
             <div class="flex_box" v-for="data in item.data">
               <div>{{ data.time_value }}</div>
-              <div style="color: #f44336">
+              <div style="color: #a23333">
                 {{ formatPrice(data.price) }}
               </div>
             </div>
@@ -118,11 +86,11 @@
         <div class="book_total">
           <div class="flex_box">
             <h3>合计</h3>
-            <h3 style="color: #f44336">{{ formatPrice(showTotal) }}</h3>
+            <h3 style="color: #a23333">{{ formatPrice(showTotal) }}</h3>
           </div>
           <el-button
             @click="submit(ruleFormRef)"
-            type="primary"
+            class="settlement-button"
             style="width: 100%"
             >结算</el-button
           >
@@ -131,6 +99,7 @@
     </el-col>
   </el-row>
 </template>
+
 <script setup lang="ts">
 import { onMounted, reactive, ref, watch } from 'vue'
 import { addOrder, wxPay } from '@/api/order'
@@ -150,13 +119,12 @@ const tableData = ref<any>([])
 const seletSite = ref<any>([])
 const showSeletSite = ref<any>([])
 const showTotal = ref(0)
-const nextSevenDays = ref([] as any)
+const nextThreeDays = ref([] as any)
 const selectDate = ref('') //选择的日期
 
 const legends = [
-  { name: '线下预定', type: 'primary' },
-  { name: '线上预定', type: 'warning' },
   { name: '不可预定', type: 'info' },
+  { name: '已选择', type: 'success' }, // 修改颜色为深绿色
 ]
 
 const ruleFormRef = ref<FormInstance>()
@@ -183,22 +151,22 @@ const rules = reactive<FormRules<RuleForm>>({
   ],
 })
 
-// 获取未来七天日期
-const initSevenDays = () => {
+// 获取未来三天日期
+const initThreeDays = () => {
   let today = dayjs()
-  for (let i = 0; i < 7; i++) {
+  for (let i = 0; i < 3; i++) {
     let futureDate = today.add(i, 'day')
-    nextSevenDays.value.push({
+    nextThreeDays.value.push({
       short: futureDate.format('MM-DD'),
       long: futureDate.format('YYYY-MM-DD'),
     })
   }
-  selectDate.value = nextSevenDays.value[0].long
+  selectDate.value = nextThreeDays.value[0].long
 }
 
 onMounted(() => {
   seletSite.value = []
-  initSevenDays()
+  initThreeDays()
 })
 
 watch(
@@ -238,80 +206,34 @@ const setShowSeletSite = () => {
   })
 }
 
-const getTagType = (name: string) => {
-  switch (name) {
-    case '线下预定':
-      return 'primary'
-    case '线上预定':
-      return 'warning'
-    case '不可预定':
-      return 'info'
-    default:
-      return 'info'
-  }
-}
-
 // 刷新数据
 const updateData = (date: any) => {
-  getSiteReserve({ date: date }).then((res: any) => {
-    let postData = res.data.data
-    // 数据清空
-    tableData.value = []
+  const sites = Array.from({ length: 14 }, (_, i) => `场地${i + 1}`)
+  const times = [
+    ...Array.from({ length: 4 }, (_, i) => `08:${i * 2}0`), // 8:00 - 12:00
+    ...Array.from({ length: 8 }, (_, i) => `14:${i * 2}0`), // 14:00 - 22:00
+  ]
 
-    // 设置列名
-    colNames.value = []
-    postData.forEach((element: any) => {
-      colNames.value.push(element.site_name)
+  colNames.value = sites
+  tableData.value = []
+
+  times.forEach((time) => {
+    const row = { timeValue: time }
+    sites.forEach((site) => {
+      row[site] = {
+        price: 30,
+        checked: false,
+        site_name: site,
+        time_value: time,
+      }
     })
-
-    // 设置数据
-    Object.keys(timeEnums).forEach((key) => {
-      let dataObj = { timeValue: timeEnums[key] } as any
-      let numberKey = Number(key)
-      let tmpId = 0
-
-      postData.forEach((value: any) => {
-        // todo 添加订单信息
-        if (value.saas_reserve_time_enum.includes(numberKey)) {
-          dataObj[value.site_name] = '线下预定'
-        } else if (value.online_reserve_time_enum.includes(numberKey)) {
-          dataObj[value.site_name] = '线上预定'
-        } else if (value.status == 'N') {
-          dataObj[value.site_name] = '停用'
-        } else if (value.store_time_enum.includes(numberKey)) {
-          value.price.forEach((v: any) => {
-            // 可预定场地的信息
-            let nowHour = dayjs().hour()
-            if (
-              //排除今天已经超时的
-              selectDate.value == dayjs().format('YYYY-MM-DD') &&
-              v.time_enum <= nowHour + 1
-            ) {
-              dataObj[value.site_name] = '不可预定'
-            } else if (v.time_enum == numberKey) {
-              dataObj[value.site_name] = {
-                id: tmpId,
-                price: v.price,
-                checked: false,
-                site_id: value.site_id,
-                site_name: value.site_name,
-                time_enum: v.time_enum,
-                time_value: timeEnums[v.time_enum],
-              }
-            }
-          })
-        } else {
-          dataObj[value.site_name] = '不可预定'
-        }
-      })
-      tableData.value.push(dataObj)
-    })
+    tableData.value.push(row)
   })
 }
 
 // 价格格式化
 const formatPrice = (price: number) => {
-  return '￥' + (price / 100.0).toFixed(2)
+  return '￥' + price.toFixed(2)
 }
 
 const submit = async (formEl: FormInstance | undefined) => {
@@ -328,7 +250,6 @@ const submit = async (formEl: FormInstance | undefined) => {
         reserve_phone: form.phone,
         site_detail: [],
       })
-      console.log(seletSite.value)
 
       colNames.value.forEach((value: any) => {
         let tmpSite = { site_id: 0, time_enum: [] as any }
@@ -368,6 +289,15 @@ const submit = async (formEl: FormInstance | undefined) => {
     }
   })
 }
+
+// 设置表格行的样式
+const getRowClassName = ({ row, rowIndex }: { row: any; rowIndex: number }) => {
+  if (rowIndex % 2 === 0) {
+    return 'even-row'
+  } else {
+    return 'odd-row'
+  }
+}
 </script>
 
 <style lang="scss">
@@ -392,6 +322,11 @@ const submit = async (formEl: FormInstance | undefined) => {
     --el-table-border-color: '#FFFFFF' !important;
     --el-table-row-hover-bg-color: #fff;
     height: calc(100vh - 220px);
+    border-collapse: collapse;
+    th,
+    td {
+      border: 1px solid #ddd;
+    }
   }
 }
 
@@ -409,7 +344,7 @@ const submit = async (formEl: FormInstance | undefined) => {
       padding: 10px 20px;
       border-radius: 10px;
       font-size: 14px;
-      background-color: #eff3ff;
+      background-color: #e6f0eb; // 修改选中的底色
       line-height: 2rem;
       margin-bottom: 10px;
     }
@@ -424,5 +359,56 @@ const submit = async (formEl: FormInstance | undefined) => {
   display: flex;
   justify-content: space-between;
   align-items: center;
+}
+
+// 自定义深绿色样式
+.el-tag--success {
+  background-color: #006633 !important;
+  border-color: #006633 !important;
+}
+
+// 自定义已选择样式
+.selected-tag {
+  background-color: #006633 !important;
+  color: #fff !important;
+}
+
+// 自定义日期按钮样式
+.date-radio-button {
+  background-color: #006633 !important; /* 深绿色背景 */
+  color: #ffffff !important; /* 文字颜色为白色 */
+  border-color: #006633 !important; /* 边框颜色也为深绿色 */
+}
+
+.date-radio-button:hover {
+  background-color: #005a2e !important; /* 鼠标悬停时的深绿色背景 */
+  border-color: #005a2e !important; /* 鼠标悬停时的边框颜色 */
+}
+
+// 自定义选中的日期按钮样式
+.selected-date {
+  background-color: #005a2e !important; /* 选中状态的深绿色背景 */
+  border-color: #005a2e !important; /* 选中状态的边框颜色 */
+}
+
+// 自定义表格行样式
+.even-row {
+  background-color: #f0f9eb;
+}
+
+.odd-row {
+  background-color: #fff;
+}
+
+// 自定义结算按钮样式
+.settlement-button {
+  background-color: #006633 !important; /* 深绿色背景 */
+  border-color: #006633 !important; /* 边框颜色也为深绿色 */
+  color: #ffffff !important; /* 文字颜色为白色 */
+}
+
+.settlement-button:hover {
+  background-color: #005a2e !important; /* 鼠标悬停时的深绿色背景 */
+  border-color: #005a2e !important; /* 鼠标悬停时的边框颜色 */
 }
 </style>
