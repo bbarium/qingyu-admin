@@ -11,7 +11,6 @@
               <span>个人信息</span>
             </div>
           </template>
-
           <el-descriptions :column="1" border>
             <el-descriptions-item label="姓名">{{ userInfo.name || '-' }}</el-descriptions-item>
             <el-descriptions-item label="学号">{{ userInfo.studentId || '-' }}</el-descriptions-item>
@@ -31,17 +30,14 @@
           </el-descriptions>
         </el-card>
       </div>
-
       <!-- 右栏 - 预约管理 -->
       <div class="right-column">
         <el-card class="reservation-card" shadow="hover">
           <template #header>
             <div class="card-header">
               <span>我的预约</span>
-              <el-button type="primary" size="small" @click="handleNewReservation">新建预约</el-button>
             </div>
           </template>
-
           <el-table :data="reservations" style="width: 100%" empty-text="暂无预约记录">
             <el-table-column prop="date" label="日期" width="120"/>
             <el-table-column prop="time" label="时间段" width="150"/>
@@ -51,20 +47,41 @@
                 <el-tag :type="statusTagMap[row.status]">{{ row.status }}</el-tag>
               </template>
             </el-table-column>
+            <el-table-column label="操作" width="100" align="right"> <!-- 关键对齐属性 -->
+              <template #default="{ row, $index }">
+                <div class="action-cell"> <!-- 关键样式类 -->
+                  <el-button 
+                    type="danger" 
+                    size="small"
+                    @click="handleCancelReservation($index)"
+                    :disabled="row.status === 'canceled'"
+                  >取消</el-button>
+                </div>
+              </template>
+            </el-table-column>
           </el-table>
         </el-card>
-
         <el-card class="queue-card" shadow="hover">
           <template #header>
             <div class="card-header">
               <span>我的排队情况</span>
             </div>
           </template>
-
           <el-table :data="queues" style="width: 100%" empty-text="暂无排队记录">
-            <el-table-column prop="position" label="当前位次" width="100"/>
-            <el-table-column prop="facility" label="设备/场地"/>
-            <el-table-column prop="waitTime" label="预计等待时间"/>
+            <el-table-column prop="date" label="日期" width="120"/>
+            <el-table-column prop="time" label="时间段" width="700"/>
+            <!-- 新增 align="right" 和 action-cell 类，与预约部分完全一致 -->
+            <el-table-column label="操作" width="100" align="right"> 
+              <template #default="{ row, $index }">
+                <div class="action-cell"> 
+                  <el-button 
+                    type="danger" 
+                    size="small"
+                    @click="handleCancelQueue($index)"
+                  >取消</el-button>
+                </div>
+              </template>
+            </el-table-column>
           </el-table>
         </el-card>
       </div>
@@ -74,6 +91,7 @@
 
 <script setup lang="ts">
 import { ref } from 'vue'
+import { ElMessage, ElMessageBox } from 'element-plus'
 
 interface UserInfo {
   name: string
@@ -85,10 +103,17 @@ interface UserInfo {
 }
 
 interface Reservation {
+  id: number
   date: string
   time: string
   facility: string
   status: 'pending' | 'confirmed' | 'canceled'
+}
+
+interface Queue {
+  id: number
+  date: string
+  time: string
 }
 
 const userInfo = ref<UserInfo>({
@@ -97,19 +122,26 @@ const userInfo = ref<UserInfo>({
   netId: 'zhangsan',
   role: 1,
   fund: 1500.5,
-  credit: 100  // 测试信用值
+  credit: 85
 })
 
 const reservations = ref<Reservation[]>([
   {
-    date: '2025-05-24',
+    id: 1,
+    date: '2023-07-25',
     time: '14:00-16:00',
-    facility: '东校',
+    facility: '实验室A',
     status: 'confirmed'
   }
 ])
 
-const queues = ref<any[]>([])
+const queues = ref<Queue[]>([
+  {
+    id: 1,
+    date: '2023-07-26',
+    time: '09:00-11:00'
+  }
+])
 
 const userRoleMap: Record<number, string> = {
   0: '管理员',
@@ -130,8 +162,26 @@ const getCreditClass = (credit: number) => {
   return 'poor'
 }
 
-const handleNewReservation = () => {
-  console.log('打开预约对话框')
+const handleCancelReservation = (index: number) => {
+  ElMessageBox.confirm('确定要取消该预约吗？', '提示', {
+    confirmButtonText: '确定',
+    cancelButtonText: '取消',
+    type: 'warning'
+  }).then(() => {
+    reservations.value[index].status = 'canceled'
+    ElMessage.success('预约已取消')
+  }).catch(() => {})
+}
+
+const handleCancelQueue = (index: number) => {
+  ElMessageBox.confirm('确定要取消排队吗？', '提示', {
+    confirmButtonText: '确定',
+    cancelButtonText: '取消',
+    type: 'warning'
+  }).then(() => {
+    queues.value.splice(index, 1)
+    ElMessage.success('排队已取消')
+  }).catch(() => {})
 }
 </script>
 
@@ -197,6 +247,13 @@ const handleNewReservation = () => {
   color: #C0C4CC;
 }
 
+/* 操作栏样式（与预约部分统一） */
+.action-cell {
+  display: flex;
+  justify-content: flex-end; /* 关键对齐样式 */
+  padding-right: 12px;
+}
+
 @media (max-width: 768px) {
   .content-wrapper {
     flex-direction: column;
@@ -205,6 +262,10 @@ const handleNewReservation = () => {
   .left-column,
   .right-column {
     min-width: auto;
+  }
+  
+  .action-cell {
+    padding-right: 8px;
   }
 }
 </style>
